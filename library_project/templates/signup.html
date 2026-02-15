@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SXC Library Signup</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/sxc_logo_round.svg') }}">
+    <link rel="icon" sizes="32x32" href="{{ url_for('static', filename='images/sxc_logo.png') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                linear-gradient(rgba(14, 22, 30, 0.45), rgba(14, 22, 30, 0.45)),
+                url("{{ url_for('static', filename='images/login_backdrop.jpg.jpg') }}") center/cover no-repeat fixed,
+                #f2f4f7;
+        }
+        .college-header {
+            background: linear-gradient(90deg, #7a0000, #a40000);
+            color: #fff;
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .college-header img { width: 75px; height: 75px; border-radius: 50%; object-fit: cover; }
+        .college-text h1 { margin: 0; font-size: 28px; font-weight: 700; color: #fff; }
+        .college-text h2 { margin: 2px 0; font-size: 18px; font-weight: 600; color: #fff; }
+        .college-text p { margin: 0; font-size: 14px; color: #fff; opacity: 0.9; }
+        .navbar {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .navbar h3 { margin: 0; font-size: 1.1rem; }
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .datetime-widget {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.25);
+            font-size: 0.85rem;
+            min-width: 170px;
+        }
+        .datetime-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #fff;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+        .datetime-row i { opacity: 0.9; }
+        .logout-btn {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            border: 1px solid rgba(255,255,255,0.8);
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+        .logout-btn:hover {
+            background: white;
+            color: #2c3e50;
+        }
+        .wrap {
+            min-height: calc(100vh - 170px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+        }
+        .card {
+            width: min(460px, 100%);
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid #e7e7e7;
+            border-radius: 14px;
+            box-shadow: 0 20px 36px rgba(0,0,0,0.2);
+            padding: 24px;
+        }
+        h2 { margin: 0 0 8px; color: #7a0000; }
+        p { margin: 0 0 14px; color: #4e5b69; font-size: 0.9rem; }
+        .error, .success {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .error { background: #fdecea; color: #c0392b; }
+        .success { background: #eaf8ef; color: #1f9254; }
+        input, select {
+            width: 100%;
+            margin-top: 10px;
+            padding: 11px 12px;
+            border: 1px solid #d2d7de;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #fff;
+        }
+        input:focus, select:focus { outline: none; border-color: #7a0000; }
+        button {
+            width: 100%;
+            margin-top: 14px;
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font-weight: 700;
+            background: #7a0000;
+            color: #fff;
+            cursor: pointer;
+        }
+        button:hover { background: #5d0000; }
+        .meta {
+            margin-top: 12px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        .meta a { color: #7a0000; text-decoration: none; font-weight: 700; }
+        .meta a:hover { text-decoration: underline; }
+        @media (max-width: 700px) {
+            .college-header { flex-wrap: wrap; justify-content: center; text-align: center; padding: 14px 16px; }
+            .college-header img { width: 64px; height: 64px; }
+            .navbar { flex-direction: column; gap: 10px; padding: 0.75rem 1rem; text-align: center; }
+            body { background-attachment: scroll; }
+            .card { padding: 20px; }
+            .wrap { min-height: calc(100vh - 220px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="college-header">
+        <img src="{{ url_for('static', filename='images/sxc_logo.png') }}" alt="SXC Logo">
+        <div class="college-text">
+            <h1>St. Xavier's College</h1>
+            <h2>(Autonomous)</h2>
+            <p>Palayamkottai, Tamil Nadu, India | Since 1923</p>
+        </div>
+    </div>
+    <div class="navbar">
+        <h3>SXC Library Management</h3>
+        <div class="nav-right">
+            <div class="datetime-widget" aria-live="polite">
+                <div class="datetime-row">
+                    <i class="fa-regular fa-calendar"></i>
+                    <span id="dateText">--/--/----</span>
+                </div>
+                <div class="datetime-row">
+                    <i class="fa-regular fa-clock"></i>
+                    <span id="timeText">--:--:--</span>
+                </div>
+            </div>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </div>
+    <div class="wrap">
+        <div class="card">
+            <h2>Sign Up</h2>
+            <p>Register to create your account and login immediately.</p>
+
+            {% if error %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+            {% if success %}
+            <div class="success">{{ success }}</div>
+            {% endif %}
+
+            <form method="POST">
+                <select name="role" required>
+                    <option value="student" {% if selected_role == 'student' %}selected{% endif %}>Student</option>
+                    <option value="staff" {% if selected_role == 'staff' %}selected{% endif %}>Staff</option>
+                </select>
+                <input type="text" name="full_name" placeholder="Full Name" required>
+                <input type="text" name="username" placeholder="Username / Roll Number" required autocapitalize="none" spellcheck="false">
+                <input type="date" name="dob" placeholder="Date of Birth" required>
+                <input type="email" name="email" placeholder="Email ID" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit">Create Account</button>
+            </form>
+
+            <div class="meta">
+                Already registered? <a href="{{ url_for('login') }}">Login</a>
+            </div>
+        </div>
+    </div>
+    <script>
+        function updateDateTime() {
+            const dateEl = document.getElementById("dateText");
+            const timeEl = document.getElementById("timeText");
+            if (!dateEl || !timeEl) return;
+
+            const now = new Date();
+            const weekday = now.toLocaleDateString("en-US", { weekday: "long" });
+            const date = now.toLocaleDateString("en-GB");
+            const time = now.toLocaleTimeString("en-GB", { hour12: false });
+
+            dateEl.textContent = `${weekday}, ${date}`;
+            timeEl.textContent = time;
+        }
+
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+    </script>
+</body>
+</html>

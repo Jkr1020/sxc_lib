@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SXC Smart Library</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/sxc_logo_round.svg') }}">
+    <link rel="icon" sizes="32x32" href="{{ url_for('static', filename='images/sxc_logo.png') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            background: #f4f7f6;
+            color: #333;
+        }
+
+        /* ===== COLLEGE HEADER ===== */
+        .college-header {
+            background: linear-gradient(90deg, #7a0000, #a40000);
+            color: #fff;
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .college-header img {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .college-text h1 { margin: 0; font-size: 28px; font-weight: 700; }
+        .college-text h2 { margin: 2px 0; font-size: 18px; font-weight: 600; }
+        .college-text p  { margin: 0; font-size: 14px; opacity: 0.9; }
+
+        /* ===== NAVBAR ===== */
+        .navbar {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.9rem;
+        }
+
+        .logout-btn {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border: 1px solid white;
+            padding: 5px 15px;
+            border-radius: 4px;
+        }
+
+        .logout-btn:hover {
+            background: white;
+            color: #2c3e50;
+        }
+        .datetime-widget {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.25);
+            font-size: 0.85rem;
+            min-width: 170px;
+        }
+        .datetime-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #fff;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+        .datetime-row i { opacity: 0.9; }
+
+        /* ===== MAIN CONTAINER ===== */
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        /* ===== SEARCH BOX ===== */
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            align-items: center;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            min-width: 0;
+        }
+
+        button.search-btn {
+            padding: 10px 25px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        /* ===== BOOK CARDS ===== */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 1rem;
+        }
+
+        .book-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            cursor: pointer;
+            border-left: 4px solid #3498db;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .book-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .book-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-request {
+            background: #7a0000;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .btn-request:hover { background: #5c0000; }
+
+        .tag {
+            background: #e0f2f1;
+            color: #00695c;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        /* ===== RECOMMENDATIONS ===== */
+        #recommendations {
+            background: #fff8e1;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 5px solid #ffb300;
+            display: none;
+            margin-top: 2rem;
+        }
+
+        .requests {
+            background: #ffffff;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-top: 2rem;
+        }
+
+        .requests h3 { margin-top: 0; }
+
+        .due-fine {
+            background: #ffffff;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-top: 2rem;
+        }
+
+        .due-fine h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+
+        .due-grid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        }
+
+        .due-card {
+            border: 1px solid #e8edf3;
+            border-radius: 8px;
+            padding: 12px;
+            background: #fbfdff;
+        }
+
+        .due-label {
+            color: #5b6674;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+
+        .due-value {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #22313f;
+        }
+
+        .due-sub {
+            font-size: 0.8rem;
+            color: #6f7b87;
+            margin-top: 4px;
+        }
+
+        .fine-pos { color: #c0392b; }
+        .fine-zero { color: #1f9254; }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        .data-table th, .data-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            text-transform: capitalize;
+            display: inline-block;
+        }
+
+        .badge.pending { background: #fff3cd; color: #856404; }
+        .badge.approved { background: #d4edda; color: #155724; }
+        .badge.rejected { background: #f8d7da; color: #721c24; }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1200;
+            padding: 16px;
+        }
+
+        .modal-card {
+            width: 100%;
+            max-width: 460px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
+            padding: 18px;
+        }
+
+        .modal-card h3 {
+            margin: 0 0 12px 0;
+            color: #7a0000;
+        }
+
+        .modal-help {
+            font-size: 0.9rem;
+            color: #555;
+            margin: 0 0 12px 0;
+        }
+
+        .modal-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 14px;
+        }
+
+        .btn-outline {
+            padding: 10px 16px;
+            border: 1px solid #b7b7b7;
+            background: #fff;
+            color: #333;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* ===== CHATBOT ===== */
+        .chat-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2980b9;
+            color: white;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .chat-window {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 360px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            display: none;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background: #2980b9;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-title {
+            font-weight: 700;
+        }
+
+        .chat-tools {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-tools button {
+            border: 1px solid rgba(255,255,255,0.65);
+            color: #fff;
+            background: transparent;
+            border-radius: 5px;
+            padding: 3px 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .chat-tools button:hover {
+            background: rgba(255,255,255,0.18);
+        }
+
+        .chat-body {
+            height: 280px;
+            padding: 15px;
+            overflow-y: auto;
+            background: #f9f9f9;
+            font-size: 0.9rem;
+        }
+
+        .msg {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 15px;
+            max-width: 80%;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .bot { background: #e1f5fe; }
+        .user { background: #2980b9; color: white; margin-left: auto; }
+        .typing { font-style: italic; color: #4a5968; }
+
+        .chat-quick {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 10px 12px;
+            border-top: 1px solid #e4e7eb;
+            background: #fff;
+        }
+
+        .chat-chip {
+            border: 1px solid #cfd7e1;
+            background: #f8fbff;
+            color: #2c3e50;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.78rem;
+            cursor: pointer;
+        }
+
+        .chat-chip:hover { background: #ecf5ff; }
+
+        .chat-input {
+            display: flex;
+            border-top: 1px solid #ddd;
+        }
+
+        .chat-input input {
+            border: none;
+            padding: 15px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-send {
+            border: none;
+            background: #2980b9;
+            color: white;
+            padding: 0 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .chat-send:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 700px) {
+            .college-header { flex-wrap: wrap; justify-content: center; text-align: center; padding: 14px 16px; }
+            .college-header img { width: 64px; height: 64px; }
+            .navbar { flex-direction: column; gap: 10px; padding: 0.75rem 1rem; text-align: center; }
+            .search-box { flex-direction: column; align-items: stretch; }
+            button.search-btn { width: 100%; }
+            .chat-window { width: auto; left: 10px; right: 10px; }
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="college-header">
+ <img src="{{ url_for('static', filename='images/sxc_logo.png') }}" alt="SXC Logo">
+
+    <div class="college-text">
+        <h1>St. Xavier's College</h1>
+        <h2>(Autonomous)</h2>
+        <p>Palayamkottai, Tamil Nadu, India | Since 1923</p>
+    </div>
+</div>
+
+<!-- ===== NAVBAR ===== -->
+<div class="navbar">
+    <h3>SXC Library Management</h3>
+    <div class="user-info">
+        <div class="datetime-widget" aria-live="polite">
+            <div class="datetime-row">
+                <i class="fa-regular fa-calendar"></i>
+                <span id="dateText">--/--/----</span>
+            </div>
+            <div class="datetime-row">
+                <i class="fa-regular fa-clock"></i>
+                <span id="timeText">--:--:--</span>
+            </div>
+        </div>
+        <span>
+            {% if role == 'staff' %}  {% else %}  {% endif %}
+            {{ user_id }}
+        </span>
+        <a href="/logout" class="logout-btn">Logout</a>
+    </div>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div class="container">
+
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search books...">
+        <button class="search-btn" onclick="performSearch()">Search</button>
+    </div>
+
+    <div id="searchResults"></div>
+
+    <div id="recommendations">
+        <h3>✨ Recommended for You</h3>
+        <p id="recContext"></p>
+        <div id="recList" class="grid-container"></div>
+    </div>
+
+    <div id="randomSection">
+        <h3>🎲 Discover Something New</h3>
+        <div id="randomList" class="grid-container">
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <div class="due-fine">
+        <h3>Due Date &amp; Fine Summary</h3>
+        <div class="due-grid">
+            <div class="due-card">
+                <div class="due-label">Upcoming Due (Approved)</div>
+                <div class="due-value" id="upcomingDueCount">0</div>
+                <div class="due-sub">Books with due date today or later</div>
+            </div>
+            <div class="due-card">
+                <div class="due-label">Overdue (Approved)</div>
+                <div class="due-value" id="overdueCount">0</div>
+                <div class="due-sub">Books past due date</div>
+            </div>
+            <div class="due-card">
+                <div class="due-label">Estimated Fine (Rs)</div>
+                <div class="due-value fine-zero" id="fineAmount">0</div>
+                <div class="due-sub">Calculated at Rs. 1 per overdue day</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="requests">
+        <h3>My Requests</h3>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr><th>Book</th><th>Access No</th><th>Requested Due Date</th><th>Est. Fine (Rs)</th><th>Status</th><th>Requested At</th></tr>
+                </thead>
+                <tbody id="my-request-body">
+                    <tr><td colspan="6" style="text-align:center; padding: 16px;">Loading requests...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="requestModal" aria-hidden="true">
+    <div class="modal-card">
+        <h3>Request Book</h3>
+        <p class="modal-help">Enter your email ID. Due date is auto-assigned to 10 days from today.</p>
+        <form id="requestForm">
+            <div class="modal-grid">
+                <input type="text" id="requestBookTitle" readonly>
+                <input type="email" id="requestEmail" placeholder="Email ID" required>
+                <input type="date" id="requestDueDate" readonly>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-outline" type="button" onclick="closeRequestModal()">Cancel</button>
+                <button class="search-btn" type="submit">Submit Request</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== CHATBOT ===== -->
+<button class="chat-btn" onclick="toggleChat()">Chat</button>
+
+<div class="chat-window" id="chatWindow">
+    <div class="chat-header">
+        <span class="chat-title">LibBot</span>
+        <div class="chat-tools">
+            <button type="button" onclick="clearChat()">Clear</button>
+            <button type="button" onclick="toggleChat()">Close</button>
+        </div>
+    </div>
+    <div class="chat-body" id="chatBody">
+        <div class="msg bot">Hi, I am LibBot. Ask about books, due dates, fines, or college information.</div>
+    </div>
+    <div class="chat-quick">
+        <button class="chat-chip" type="button" onclick="sendQuickMessage('my books and due dates')">My due dates</button>
+        <button class="chat-chip" type="button" onclick="sendQuickMessage('fine rules')">Fine rules</button>
+        <button class="chat-chip" type="button" onclick="sendQuickMessage('find computer science books')">Find CS books</button>
+    </div>
+    <div class="chat-input">
+        <input type="text" id="chatInput" placeholder="Type a message..." onkeydown="handleEnter(event)">
+        <button class="chat-send" id="chatSendBtn" type="button" onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<!-- ===== JAVASCRIPT ===== -->
+<script>
+    function updateDateTime() {
+        const dateEl = document.getElementById("dateText");
+        const timeEl = document.getElementById("timeText");
+        if (!dateEl || !timeEl) return;
+
+        const now = new Date();
+        const weekday = now.toLocaleDateString("en-US", { weekday: "long" });
+        const date = now.toLocaleDateString("en-GB");
+        const time = now.toLocaleTimeString("en-GB", { hour12: false });
+
+        dateEl.textContent = `${weekday}, ${date}`;
+        timeEl.textContent = time;
+    }
+
+    window.onload = async () => {
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+
+        const requestForm = document.getElementById('requestForm');
+        const requestModal = document.getElementById('requestModal');
+        if (requestModal) {
+            requestModal.addEventListener('click', (e) => {
+                if (e.target === requestModal) closeRequestModal();
+            });
+        }
+        if (requestForm) {
+            requestForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                let book = {};
+                try {
+                    book = JSON.parse(requestForm.dataset.book || '{}');
+                } catch (err) {
+                    book = {};
+                }
+                const emailInput = document.getElementById('requestEmail');
+                const dueDateInput = document.getElementById('requestDueDate');
+                const email = ((emailInput && emailInput.value) || '').trim();
+
+                if (!email) {
+                    alert("Email is required to request a book.");
+                    return;
+                }
+                if (!isValidEmail(email)) {
+                    alert("Please enter a valid email ID.");
+                    return;
+                }
+                await submitBookRequest(book, email);
+            });
+        }
+
+        loadMyRequests();
+        const res = await fetch('/api/random');
+        const books = await res.json();
+        const container = document.getElementById('randomList');
+        container.innerHTML = '';
+
+        books.forEach(book => {
+            const div = createBookCard(book);
+            container.appendChild(div);
+        });
+    };
+
+    function escapeHtml(text) {
+        return String(text || '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    function parseDueDate(dateStr) {
+        if (!dateStr) return null;
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return null;
+        const year = Number(parts[0]);
+        const month = Number(parts[1]) - 1;
+        const day = Number(parts[2]);
+        if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null;
+        return new Date(year, month, day);
+    }
+
+    function diffDays(fromDate, toDate) {
+        const msPerDay = 24 * 60 * 60 * 1000;
+        const from = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate()).getTime();
+        const to = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate()).getTime();
+        return Math.floor((to - from) / msPerDay);
+    }
+
+    function computeFineForRow(row) {
+        const status = String(row.status || '').toLowerCase();
+        if (status !== 'approved') return 0;
+        const due = parseDueDate(row.requested_due_date || '');
+        if (!due) return 0;
+        const daysLate = diffDays(due, new Date());
+        return daysLate > 0 ? daysLate : 0;
+    }
+
+    function setDueFineSummary(rows) {
+        const upcomingEl = document.getElementById('upcomingDueCount');
+        const overdueEl = document.getElementById('overdueCount');
+        const fineEl = document.getElementById('fineAmount');
+        if (!upcomingEl || !overdueEl || !fineEl) return;
+
+        const today = new Date();
+        let upcoming = 0;
+        let overdue = 0;
+        let fine = 0;
+
+        rows.forEach((row) => {
+            const status = String(row.status || '').toLowerCase();
+            const due = parseDueDate(row.requested_due_date || '');
+            if (status !== 'approved' || !due) return;
+
+            const daysDiff = diffDays(due, today);
+            if (daysDiff > 0) {
+                overdue += 1;
+                fine += daysDiff;
+            } else {
+                upcoming += 1;
+            }
+        });
+
+        upcomingEl.textContent = String(upcoming);
+        overdueEl.textContent = String(overdue);
+        fineEl.textContent = String(fine);
+        fineEl.className = `due-value ${fine > 0 ? 'fine-pos' : 'fine-zero'}`;
+    }
+
+    function createBookCard(book) {
+        const div = document.createElement('div');
+        div.className = 'book-card';
+        div.innerHTML = `
+            <h4>${book.title}</h4>
+            <span class="tag">${book.category || ''}</span>
+            <div class="book-actions">
+                <button class="btn-request" type="button">Request Book</button>
+            </div>
+        `;
+        div.onclick = () => getRecommendations(book);
+        const btn = div.querySelector('.btn-request');
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            requestBook(book);
+        };
+        return div;
+    }
+
+    async function performSearch() {
+        const query = searchInput.value;
+        if (!query) return;
+
+        randomSection.style.display = 'none';
+
+        const res = await fetch('/api/search', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({query})
+        });
+
+        const books = await res.json();
+        searchResults.innerHTML = '<h3>🔍 Results</h3>';
+
+        const grid = document.createElement('div');
+        grid.className = 'grid-container';
+
+        books.forEach(book => {
+            const div = createBookCard(book);
+            grid.appendChild(div);
+        });
+
+        searchResults.appendChild(grid);
+    }
+
+    async function getRecommendations(book) {
+        recommendations.style.display = 'block';
+        recContext.innerHTML = `Based on <b>${book.title}</b>`;
+
+        const res = await fetch('/api/recommend', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(book)
+        });
+
+        const recs = await res.json();
+        recList.innerHTML = '';
+
+        recs.forEach(r => {
+            const div = createBookCard(r);
+            recList.appendChild(div);
+        });
+    }
+
+    function getCachedEmail() {
+        return localStorage.getItem('sxc_email') || '';
+    }
+
+    function setCachedEmail(email) {
+        if (email) localStorage.setItem('sxc_email', email);
+    }
+
+    function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function getAutoDueDate() {
+        const now = new Date();
+        now.setDate(now.getDate() + 10);
+        return now.toISOString().split('T')[0];
+    }
+
+    function openRequestModal(book) {
+        const title = (book && (book.title || book.current_title || '')).trim();
+        if (!title) return;
+
+        const modal = document.getElementById('requestModal');
+        const titleInput = document.getElementById('requestBookTitle');
+        const emailInput = document.getElementById('requestEmail');
+        const dueDateInput = document.getElementById('requestDueDate');
+        const form = document.getElementById('requestForm');
+        if (!modal || !titleInput || !emailInput || !dueDateInput || !form) return;
+
+        titleInput.value = title;
+        emailInput.value = getCachedEmail();
+        dueDateInput.value = getAutoDueDate();
+        form.dataset.book = JSON.stringify(book || {});
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+        emailInput.focus();
+    }
+
+    function closeRequestModal() {
+        const modal = document.getElementById('requestModal');
+        const form = document.getElementById('requestForm');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        if (form) form.dataset.book = '';
+    }
+
+    async function requestBook(book) {
+        openRequestModal(book);
+    }
+
+    async function submitBookRequest(book, email) {
+        const title = book.title || book.current_title || '';
+        const accessNo = book.access_no || book.accessNo || '';
+        const category = book.category || '';
+        if (!title) return;
+
+        setCachedEmail(email);
+
+        const res = await fetch('/api/book_requests', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                title,
+                access_no: accessNo,
+                category,
+                email
+            })
+        });
+
+        const data = await res.json();
+        if (!data || !data.success) {
+            alert((data && data.error) ? data.error : "Failed to send request.");
+            return;
+        }
+        alert("Request sent to admin for approval.");
+        loadMyRequests();
+        closeRequestModal();
+    }
+
+    async function loadMyRequests() {
+        const tbody = document.getElementById('my-request-body');
+        if (!tbody) return;
+
+        try {
+            const res = await fetch('/api/book_requests/my');
+            const data = await res.json();
+            if (!data || !data.success) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 16px;">Failed to load requests.</td></tr>';
+                setDueFineSummary([]);
+                return;
+            }
+            const rows = data.data || [];
+            setDueFineSummary(rows);
+            if (!rows.length) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 16px;">No requests yet.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = rows.map(r => `
+                <tr>
+                    <td>${escapeHtml(r.book_title || '')}</td>
+                    <td>${escapeHtml(r.access_no || '')}</td>
+                    <td>${escapeHtml(r.requested_due_date || '')}</td>
+                    <td>${computeFineForRow(r)}</td>
+                    <td><span class="badge ${escapeHtml(r.status || '')}">${escapeHtml(r.status || '')}</span></td>
+                    <td>${escapeHtml(r.requested_at || '')}</td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 16px;">Failed to load requests.</td></tr>';
+            setDueFineSummary([]);
+        }
+    }
+
+    function toggleChat() {
+        const chatWindow = document.getElementById('chatWindow');
+        const chatInput = document.getElementById('chatInput');
+        if (!chatWindow) return;
+        const isOpen = chatWindow.style.display === 'flex';
+        chatWindow.style.display = isOpen ? 'none' : 'flex';
+        if (!isOpen && chatInput) chatInput.focus();
+    }
+
+    function handleEnter(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    }
+
+    function appendMessage(role, htmlContent) {
+        const chatBody = document.getElementById('chatBody');
+        if (!chatBody) return;
+        const div = document.createElement('div');
+        div.className = `msg ${role}`;
+        div.innerHTML = htmlContent;
+        chatBody.appendChild(div);
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function clearChat() {
+        const chatBody = document.getElementById('chatBody');
+        if (!chatBody) return;
+        chatBody.innerHTML = '<div class="msg bot">Chat cleared. Ask me anything about library books, due dates, fines, or college info.</div>';
+    }
+
+    function setChatSending(isSending) {
+        const input = document.getElementById('chatInput');
+        const btn = document.getElementById('chatSendBtn');
+        if (input) input.disabled = isSending;
+        if (btn) btn.disabled = isSending;
+    }
+
+    function showTypingIndicator() {
+        const chatBody = document.getElementById('chatBody');
+        if (!chatBody || document.getElementById('typingMsg')) return;
+        const typing = document.createElement('div');
+        typing.id = 'typingMsg';
+        typing.className = 'msg bot typing';
+        typing.textContent = 'LibBot is typing...';
+        chatBody.appendChild(typing);
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function hideTypingIndicator() {
+        const typing = document.getElementById('typingMsg');
+        if (typing) typing.remove();
+    }
+
+    function sendQuickMessage(text) {
+        const input = document.getElementById('chatInput');
+        if (!input) return;
+        input.value = text;
+        sendMessage();
+    }
+
+    async function sendMessage() {
+        const chatInput = document.getElementById('chatInput');
+        if (!chatInput) return;
+        const msg = chatInput.value.trim();
+        if (!msg) return;
+
+        appendMessage('user', escapeHtml(msg));
+        chatInput.value = '';
+        setChatSending(true);
+        showTypingIndicator();
+
+        try {
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: msg})
+            });
+            const data = await res.json();
+            hideTypingIndicator();
+            appendMessage('bot', (data && data.response) ? data.response : 'No response received.');
+        } catch (err) {
+            hideTypingIndicator();
+            appendMessage('bot', 'Unable to connect right now. Please try again.');
+        } finally {
+            setChatSending(false);
+            chatInput.focus();
+        }
+    }
+</script>
+
+</body>
+</html>
+
