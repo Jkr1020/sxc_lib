@@ -1262,6 +1262,37 @@ def _get_smtp_config() -> dict:
     }
 
 
+def _send_email_via_resend(to_addr: str, subject: str, body: str, fallback_from_addr: str) -> tuple[bool, str]:
+    api_key = (os.getenv("RESEND_API_KEY") or "").strip()
+    if not api_key:
+        return False, "RESEND_API_KEY is not configured."
+
+    from_addr = (os.getenv("RESEND_FROM") or fallback_from_addr or "").strip()
+    if not from_addr:
+        return False, "RESEND_FROM (or SMTP_FROM) is missing."
+
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "from": from_addr,
+        "to": [to_addr],
+        "subject": subject,
+        "text": body,
+    }
+
+    try:
+        resp = requests.post(url, headers=headers, json=payload, timeout=15)
+        if 200 <= resp.status_code < 300:
+            return True, ""
+        detail = (resp.text or f"HTTP {resp.status_code}").strip()
+        return False, detail[:220]
+    except Exception as e:
+        return False, (str(e) or "Resend API request failed.")[:220]
+
+
 def _send_email(to_addr: str, subject: str, body: str) -> tuple[bool, str, str]:
     to_addr = (to_addr or "").strip()
     if not to_addr:
@@ -1323,15 +1354,30 @@ def _send_email(to_addr: str, subject: str, body: str) -> tuple[bool, str, str]:
             except Exception as fallback_err:
                 detail = (str(fallback_err) or "Unknown SMTP error").strip()
                 print(f"[WARN] Email send failed after Gmail 465 fallback: {detail}")
-                return False, "send_failed", detail[:220]
+                api_ok, api_detail = _send_email_via_resend(to_addr, subject, body, cfg["from_addr"])
+                if api_ok:
+                    print("[INFO] Email delivered via Resend fallback.")
+                    return True, "sent", ""
+                merged = f"SMTP fallback failed: {detail}. Resend fallback failed: {api_detail}".strip()
+                return False, "send_failed", merged[:220]
 
         detail = (str(e) or "Unknown SMTP error").strip()
         print(f"[WARN] Email send failed: {detail}")
-        return False, "send_failed", detail[:220]
+        api_ok, api_detail = _send_email_via_resend(to_addr, subject, body, cfg["from_addr"])
+        if api_ok:
+            print("[INFO] Email delivered via Resend fallback.")
+            return True, "sent", ""
+        merged = f"SMTP failed: {detail}. Resend fallback failed: {api_detail}".strip()
+        return False, "send_failed", merged[:220]
     except Exception as e:
         print(f"[WARN] Email send failed: {e}")
         detail = (str(e) or "Unknown SMTP error").strip()
-        return False, "send_failed", detail[:220]
+        api_ok, api_detail = _send_email_via_resend(to_addr, subject, body, cfg["from_addr"])
+        if api_ok:
+            print("[INFO] Email delivered via Resend fallback.")
+            return True, "sent", ""
+        merged = f"SMTP failed: {detail}. Resend fallback failed: {api_detail}".strip()
+        return False, "send_failed", merged[:220]
 
 
 def _get_password_reset_serializer() -> URLSafeTimedSerializer:
