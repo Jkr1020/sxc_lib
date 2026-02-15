@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SXC Library Portal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/sxc_logo_round.svg') }}">
+    <link rel="icon" sizes="32x32" href="{{ url_for('static', filename='images/sxc_logo.png') }}">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                linear-gradient(rgba(14, 22, 30, 0.45), rgba(14, 22, 30, 0.45)),
+                url("{{ url_for('static', filename='images/login_backdrop.jpg.jpg') }}") center/cover no-repeat fixed,
+                #f2f4f7;
+        }
+
+        /* ===== HEADER ===== */
+        .college-header {
+            background: linear-gradient(90deg, #7a0000, #a40000);
+            color: #fff;
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .college-header img { width: 75px; height: 75px; border-radius: 50%; object-fit: cover; }
+        .college-text h1 { margin: 0; font-size: 28px; font-weight: 700; }
+        .college-text h2 { margin: 2px 0; font-size: 18px; font-weight: 600; }
+        .college-text p { margin: 0; font-size: 14px; opacity: 0.9; }
+        /* ===== NAVBAR ===== */
+        .navbar {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .navbar h3 { margin: 0; font-size: 1.1rem; }
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .datetime-widget {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.25);
+            font-size: 0.85rem;
+            min-width: 170px;
+        }
+        .datetime-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #fff;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+        .datetime-row i { opacity: 0.9; }
+        .logout-btn {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            border: 1px solid rgba(255,255,255,0.8);
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+        .logout-btn:hover {
+            background: white;
+            color: #2c3e50;
+        }
+
+        /* ===== LOGIN CARD ===== */
+        .login-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 110px);
+            padding: 22px 14px;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(3px);
+            padding: 35px;
+            width: min(420px, 100%);
+            border-radius: 14px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+
+        .login-card h3 {
+            text-align: center;
+            margin: 0 0 18px;
+            color: #7a0000;
+        }
+
+        .error {
+            background: #fdecea;
+            color: #c0392b;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        .success {
+            background: #eaf8ef;
+            color: #1f9254;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .hint {
+            margin: 10px 0 0;
+            font-size: 0.85rem;
+            color: #555;
+            text-align: center;
+        }
+        .signup-link {
+            margin-top: 12px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        .forgot-link {
+            margin-top: 10px;
+            text-align: right;
+            font-size: 0.88rem;
+        }
+        .signup-link a {
+            color: #7a0000;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .forgot-link a {
+            color: #7a0000;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .signup-link a:hover { text-decoration: underline; }
+        .forgot-link a:hover { text-decoration: underline; }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            min-width: 0;
+            background: #fff;
+        }
+
+        input:focus, select:focus { outline: none; border-color: #7a0000; }
+
+        button {
+            width: 100%;
+            margin-top: 18px;
+            padding: 12px;
+            background: #7a0000;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button:hover { background: #5c0000; }
+
+        /* ===== LOGIN FORMATS ===== */
+        .demo-logins {
+            margin-top: 22px;
+            background: #f8f9fa;
+            padding: 18px;
+            border-radius: 10px;
+        }
+
+        .demo-logins h4 {
+            margin: 0 0 12px;
+            color: #7a0000;
+            text-align: center;
+        }
+
+        .login-role {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .login-role img { width: 34px; height: 34px; flex-shrink: 0; }
+        .login-role strong { font-size: 0.85rem; display: block; }
+        .login-role span { font-size: 0.8rem; color: #555; }
+
+        @media (max-width: 700px) {
+            .college-header { flex-wrap: wrap; justify-content: center; text-align: center; padding: 14px 16px; }
+            .college-header img { width: 64px; height: 64px; }
+            .login-card { padding: 24px; }
+            .navbar { flex-direction: column; gap: 10px; padding: 0.75rem 1rem; text-align: center; }
+            body {
+                background-attachment: scroll;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="college-header">
+        <img src="{{ url_for('static', filename='images/sxc_logo.png') }}" alt="SXC Logo">
+        <div class="college-text">
+            <h1>St. Xavier's College</h1>
+            <h2>(Autonomous)</h2>
+            <p>Palayamkottai, Tamil Nadu, India | Since 1923</p>
+        </div>
+    </div>
+    <div class="navbar">
+        <h3>SXC Library Management</h3>
+        <div class="nav-right">
+            <div class="datetime-widget" aria-live="polite">
+                <div class="datetime-row">
+                    <i class="fa-regular fa-calendar"></i>
+                    <span id="dateText">--/--/----</span>
+                </div>
+                <div class="datetime-row">
+                    <i class="fa-regular fa-clock"></i>
+                    <span id="timeText">--:--:--</span>
+                </div>
+            </div>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </div>
+
+    <div class="login-wrapper">
+        <div class="login-card">
+            <h3>SXC Library Portal</h3>
+
+            {% if error %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+            {% if success %}
+            <div class="success">{{ success }}</div>
+            {% endif %}
+
+            <form method="POST">
+                <select name="role" required>
+                    <option value="student" {% if selected_role == 'student' %}selected{% endif %}>Student</option>
+                    <option value="staff" {% if selected_role == 'staff' %}selected{% endif %}>Staff</option>
+                    <option value="admin" {% if selected_role == 'admin' %}selected{% endif %}>Admin</option>
+                </select>
+                <input
+                    type="text"
+                    name="username"
+                    placeholder="Username / Roll Number"
+                    required
+                    autocomplete="username"
+                    autocapitalize="none"
+                    spellcheck="false"
+                    oninput="this.value=this.value.toLowerCase()"
+                >
+                <input
+                    type="password"
+                    name="password"
+                    placeholder="Password"
+                    required
+                    autocomplete="current-password"
+                >
+                <div class="forgot-link">
+                    <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+            <div class="signup-link">
+                Not registered? <a href="{{ url_for('signup') }}">Sign up</a>
+            </div>
+
+            <p class="hint">Use the same role, username, and password that you registered with.</p>
+
+            <div class="demo-logins">
+                <h4>Login Credentials</h4>
+
+                <div class="login-role">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135823.png" alt="Student">
+                    <div>
+                        <strong>STUDENT</strong>
+                        <span>Use the same username and password created in Sign Up as Student.</span>
+                    </div>
+                </div>
+
+                <div class="login-role" style="margin-bottom:0;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Staff">
+                    <div>
+                        <strong>STAFF</strong>
+                        <span>Use the same role, username, and password created in Sign Up.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function updateDateTime() {
+            const dateEl = document.getElementById("dateText");
+            const timeEl = document.getElementById("timeText");
+            if (!dateEl || !timeEl) return;
+
+            const now = new Date();
+            const weekday = now.toLocaleDateString("en-US", { weekday: "long" });
+            const date = now.toLocaleDateString("en-GB");
+            const time = now.toLocaleTimeString("en-GB", { hour12: false });
+
+            dateEl.textContent = `${weekday}, ${date}`;
+            timeEl.textContent = time;
+        }
+
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+    </script>
+</body>
+</html>
+
