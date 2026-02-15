@@ -138,12 +138,23 @@
             text-align: center;
             font-size: 0.9rem;
         }
+        .forgot-link {
+            margin-top: 10px;
+            text-align: right;
+            font-size: 0.88rem;
+        }
         .signup-link a {
             color: #7a0000;
             font-weight: 700;
             text-decoration: none;
         }
+        .forgot-link a {
+            color: #7a0000;
+            font-weight: 600;
+            text-decoration: none;
+        }
         .signup-link a:hover { text-decoration: underline; }
+        .forgot-link a:hover { text-decoration: underline; }
 
         input, select {
             width: 100%;
@@ -269,6 +280,9 @@
                     required
                     autocomplete="current-password"
                 >
+                <div class="forgot-link">
+                    <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
+                </div>
                 <button type="submit">Login</button>
             </form>
             <div class="signup-link">

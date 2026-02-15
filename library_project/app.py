@@ -19,6 +19,7 @@ from pathlib import Path
 from sqlalchemy import inspect, text
 import smtplib
 from email.message import EmailMessage
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 import requests
 try:
@@ -937,6 +938,77 @@ def login():
     )
 
 
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    error = None
+    success = (request.args.get('success') or '').strip()
+
+    if request.method == 'POST':
+        identifier = (request.form.get('identifier') or '').strip().lower()
+        if not identifier:
+            error = "Enter your username or registered email."
+        else:
+            user = (
+                User.query.filter(db.func.lower(User.username) == identifier).first()
+                or User.query.filter(db.func.lower(db.func.coalesce(User.email, '')) == identifier).first()
+            )
+
+            if user and (user.email or '').strip():
+                try:
+                    token = _create_password_reset_token(user)
+                    subject, body = _build_password_reset_email(user, token)
+                    _send_email((user.email or '').strip(), subject, body)
+                except Exception as e:
+                    print(f"[WARN] Forgot-password email flow failed: {e}")
+
+            success = "If the account exists and has a registered email, a reset link has been sent."
+
+    return render_template('forgot_password.html', error=error, success=success)
+
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token: str):
+    error = None
+    success = None
+    user = _resolve_password_reset_token(token)
+
+    if not user:
+        return render_template(
+            'reset_password.html',
+            error="This reset link is invalid or expired. Request a new password reset link.",
+            success=success,
+            token_valid=False,
+            token=token,
+        )
+
+    if request.method == 'POST':
+        password_raw = (request.form.get('password') or '').strip()
+        confirm_password = (request.form.get('confirm_password') or '').strip()
+
+        if not password_raw or not confirm_password:
+            error = "Enter and confirm your new password."
+        elif len(password_raw) < 6:
+            error = "Password must be at least 6 characters."
+        elif password_raw != confirm_password:
+            error = "Passwords do not match."
+        else:
+            try:
+                user.set_password(password_raw)
+                db.session.commit()
+                return redirect(url_for('login', success='Password reset successful. You can login now.'))
+            except Exception as e:
+                db.session.rollback()
+                error = f"Failed to reset password: {e}"
+
+    return render_template(
+        'reset_password.html',
+        error=error,
+        success=success,
+        token_valid=True,
+        token=token,
+    )
+
+
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     error = None
@@ -1182,11 +1254,17 @@ def _get_smtp_config() -> dict:
     }
 
 
-def _send_email(to_addr: str, subject: str, body: str) -> bool:
+def _send_email(to_addr: str, subject: str, body: str) -> tuple[bool, str]:
+    to_addr = (to_addr or "").strip()
+    if not to_addr:
+        print("[WARN] Recipient email missing; email skipped.")
+        return False, "email_missing"
+
     cfg = _get_smtp_config()
-    if not (cfg["host"] and cfg["user"] and cfg["password"] and cfg["from_addr"] and to_addr):
-        print("[WARN] SMTP not configured; email skipped.")
-        return False
+    missing_cfg = [k for k in ["host", "user", "password", "from_addr"] if not cfg.get(k)]
+    if missing_cfg:
+        print(f"[WARN] SMTP not configured; missing: {', '.join(missing_cfg)}")
+        return False, "smtp_not_configured"
 
     msg = EmailMessage()
     msg["From"] = cfg["from_addr"]
@@ -1200,10 +1278,77 @@ def _send_email(to_addr: str, subject: str, body: str) -> bool:
                 smtp.starttls()
             smtp.login(cfg["user"], cfg["password"])
             smtp.send_message(msg)
-        return True
+        return True, "sent"
     except Exception as e:
         print(f"[WARN] Email send failed: {e}")
-        return False
+        return False, "send_failed"
+
+
+def _get_password_reset_serializer() -> URLSafeTimedSerializer:
+    return URLSafeTimedSerializer(app.config["SECRET_KEY"], salt="sxc-password-reset")
+
+
+def _get_password_reset_ttl_seconds() -> int:
+    raw = (os.getenv("PASSWORD_RESET_TTL_SECONDS") or "1800").strip()
+    try:
+        ttl = int(raw)
+        if ttl < 300:
+            return 300
+        if ttl > 86400:
+            return 86400
+        return ttl
+    except Exception:
+        return 1800
+
+
+def _create_password_reset_token(user: User) -> str:
+    serializer = _get_password_reset_serializer()
+    payload = {
+        "uid": int(user.id),
+        "pw": (user.password or ""),
+    }
+    return serializer.dumps(payload)
+
+
+def _resolve_password_reset_token(token: str) -> Optional[User]:
+    if not token:
+        return None
+
+    serializer = _get_password_reset_serializer()
+    try:
+        payload = serializer.loads(token, max_age=_get_password_reset_ttl_seconds())
+    except (BadSignature, SignatureExpired):
+        return None
+
+    uid = payload.get("uid")
+    password_marker = payload.get("pw")
+    if uid is None:
+        return None
+
+    user = User.query.get(uid)
+    if not user:
+        return None
+    if (user.password or "") != (password_marker or ""):
+        # Token becomes invalid after password change.
+        return None
+    return user
+
+
+def _build_password_reset_email(user: User, token: str) -> tuple[str, str]:
+    name = (user.full_name or user.username or "User").strip()
+    reset_link = url_for("reset_password", token=token, _external=True)
+    ttl_minutes = max(1, _get_password_reset_ttl_seconds() // 60)
+
+    subject = "SXC Library | Password Reset"
+    body = (
+        f"Hello {name},\n\n"
+        "We received a request to reset your SXC Library account password.\n\n"
+        f"Reset password link:\n{reset_link}\n\n"
+        f"This link will expire in {ttl_minutes} minutes.\n"
+        "If you did not request this, please ignore this email.\n\n"
+        "Regards,\nSXC Library Admin\n"
+    )
+    return subject, body
 
 
 SXC_COLLEGE_NAME = "St. Xavier's College (Autonomous), Palayamkottai"
@@ -1846,17 +1991,25 @@ def approve_book_request(req_id: int):
         return jsonify({'success': False, 'error': 'Due date must be in YYYY-MM-DD format.'}), 400
 
     try:
+        recipient_email = (req.email or "").strip()
+        if not recipient_email:
+            user = User.query.filter(db.func.lower(User.username) == (req.username or "").strip().lower()).first()
+            recipient_email = (user.email or "").strip() if user else ""
+            if recipient_email:
+                req.email = recipient_email
+
         req.status = 'approved'
         req.reviewed_at = datetime.utcnow()
         req.reviewed_by = (session.get('user_id') or '').strip().lower()
         db.session.commit()
 
         email_sent = False
-        if req.email:
+        email_reason = "email_missing"
+        if recipient_email:
             subject, body = _build_book_request_email(req, approved=True, due_date=due_date)
-            email_sent = _send_email(req.email, subject, body)
+            email_sent, email_reason = _send_email(recipient_email, subject, body)
 
-        return jsonify({'success': True, 'email_sent': email_sent})
+        return jsonify({'success': True, 'email_sent': email_sent, 'email_reason': email_reason})
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -1877,6 +2030,13 @@ def reject_book_request(req_id: int):
     note = (payload.get('note') or '').strip() or None
 
     try:
+        recipient_email = (req.email or "").strip()
+        if not recipient_email:
+            user = User.query.filter(db.func.lower(User.username) == (req.username or "").strip().lower()).first()
+            recipient_email = (user.email or "").strip() if user else ""
+            if recipient_email:
+                req.email = recipient_email
+
         req.status = 'rejected'
         req.reviewed_at = datetime.utcnow()
         req.reviewed_by = (session.get('user_id') or '').strip().lower()
@@ -1884,11 +2044,12 @@ def reject_book_request(req_id: int):
         db.session.commit()
 
         email_sent = False
-        if req.email:
+        email_reason = "email_missing"
+        if recipient_email:
             subject, body = _build_book_request_email(req, approved=False)
-            email_sent = _send_email(req.email, subject, body)
+            email_sent, email_reason = _send_email(recipient_email, subject, body)
 
-        return jsonify({'success': True, 'email_sent': email_sent})
+        return jsonify({'success': True, 'email_sent': email_sent, 'email_reason': email_reason})
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
