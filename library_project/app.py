@@ -1258,6 +1258,7 @@ def _get_smtp_config() -> dict:
         "password": (os.getenv("SMTP_PASSWORD") or "").strip(),
         "from_addr": (os.getenv("SMTP_FROM") or "").strip(),
         "use_tls": (os.getenv("SMTP_TLS") or "true").strip().lower() in ["1", "true", "yes", "y"],
+        "use_ssl": (os.getenv("SMTP_SSL") or "false").strip().lower() in ["1", "true", "yes", "y"],
     }
 
 
@@ -1279,14 +1280,24 @@ def _send_email(to_addr: str, subject: str, body: str) -> tuple[bool, str, str]:
     msg["Subject"] = subject
     msg.set_content(body)
 
-    try:
-        with smtplib.SMTP(cfg["host"], cfg["port"], timeout=10) as smtp:
+    def _deliver(host: str, port: int, use_ssl: bool, use_tls: bool) -> None:
+        if use_ssl:
+            with smtplib.SMTP_SSL(host, port, timeout=10, context=ssl.create_default_context()) as smtp:
+                smtp.ehlo()
+                smtp.login(cfg["user"], cfg["password"])
+                smtp.send_message(msg)
+            return
+
+        with smtplib.SMTP(host, port, timeout=10) as smtp:
             smtp.ehlo()
-            if cfg["use_tls"]:
+            if use_tls:
                 smtp.starttls(context=ssl.create_default_context())
                 smtp.ehlo()
             smtp.login(cfg["user"], cfg["password"])
             smtp.send_message(msg)
+
+    try:
+        _deliver(cfg["host"], int(cfg["port"]), bool(cfg.get("use_ssl")), bool(cfg.get("use_tls")))
         return True, "sent", ""
     except smtplib.SMTPAuthenticationError as e:
         raw = ""
@@ -1297,6 +1308,26 @@ def _send_email(to_addr: str, subject: str, body: str) -> tuple[bool, str, str]:
         detail = (raw or str(e) or "SMTP authentication failed.").strip()
         print(f"[WARN] Email send failed (auth): {detail}")
         return False, "send_failed", f"SMTP auth failed: {detail[:220]}"
+    except OSError as e:
+        # Common Render/network issue: submission port 587 unreachable.
+        # Try Gmail SSL fallback on 465 when host is Gmail and SSL not already enabled.
+        if (
+            cfg["host"].strip().lower() == "smtp.gmail.com"
+            and int(cfg["port"]) == 587
+            and not bool(cfg.get("use_ssl"))
+        ):
+            try:
+                print("[WARN] SMTP 587 unreachable; trying Gmail SSL on 465.")
+                _deliver(cfg["host"], 465, True, False)
+                return True, "sent", ""
+            except Exception as fallback_err:
+                detail = (str(fallback_err) or "Unknown SMTP error").strip()
+                print(f"[WARN] Email send failed after Gmail 465 fallback: {detail}")
+                return False, "send_failed", detail[:220]
+
+        detail = (str(e) or "Unknown SMTP error").strip()
+        print(f"[WARN] Email send failed: {detail}")
+        return False, "send_failed", detail[:220]
     except Exception as e:
         print(f"[WARN] Email send failed: {e}")
         detail = (str(e) or "Unknown SMTP error").strip()
