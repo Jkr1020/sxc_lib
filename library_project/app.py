@@ -18,6 +18,7 @@ from urllib.parse import urljoin, urlparse
 from pathlib import Path
 from sqlalchemy import inspect, text
 import smtplib
+import ssl
 from email.message import EmailMessage
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
@@ -1244,9 +1245,15 @@ def _format_chat_text(text: str) -> str:
 
 
 def _get_smtp_config() -> dict:
+    raw_port = (os.getenv("SMTP_PORT") or "587").strip()
+    try:
+        port = int(raw_port)
+    except Exception:
+        port = 587
+
     return {
         "host": (os.getenv("SMTP_HOST") or "").strip(),
-        "port": int(os.getenv("SMTP_PORT") or "587"),
+        "port": port,
         "user": (os.getenv("SMTP_USER") or "").strip(),
         "password": (os.getenv("SMTP_PASSWORD") or "").strip(),
         "from_addr": (os.getenv("SMTP_FROM") or "").strip(),
@@ -1254,17 +1261,17 @@ def _get_smtp_config() -> dict:
     }
 
 
-def _send_email(to_addr: str, subject: str, body: str) -> tuple[bool, str]:
+def _send_email(to_addr: str, subject: str, body: str) -> tuple[bool, str, str]:
     to_addr = (to_addr or "").strip()
     if not to_addr:
         print("[WARN] Recipient email missing; email skipped.")
-        return False, "email_missing"
+        return False, "email_missing", "Recipient email is missing."
 
     cfg = _get_smtp_config()
     missing_cfg = [k for k in ["host", "user", "password", "from_addr"] if not cfg.get(k)]
     if missing_cfg:
         print(f"[WARN] SMTP not configured; missing: {', '.join(missing_cfg)}")
-        return False, "smtp_not_configured"
+        return False, "smtp_not_configured", f"Missing SMTP fields: {', '.join(missing_cfg)}"
 
     msg = EmailMessage()
     msg["From"] = cfg["from_addr"]
@@ -1274,14 +1281,26 @@ def _send_email(to_addr: str, subject: str, body: str) -> tuple[bool, str]:
 
     try:
         with smtplib.SMTP(cfg["host"], cfg["port"], timeout=10) as smtp:
+            smtp.ehlo()
             if cfg["use_tls"]:
-                smtp.starttls()
+                smtp.starttls(context=ssl.create_default_context())
+                smtp.ehlo()
             smtp.login(cfg["user"], cfg["password"])
             smtp.send_message(msg)
-        return True, "sent"
+        return True, "sent", ""
+    except smtplib.SMTPAuthenticationError as e:
+        raw = ""
+        try:
+            raw = (e.smtp_error or b"").decode("utf-8", errors="ignore")
+        except Exception:
+            raw = str(e)
+        detail = (raw or str(e) or "SMTP authentication failed.").strip()
+        print(f"[WARN] Email send failed (auth): {detail}")
+        return False, "send_failed", f"SMTP auth failed: {detail[:220]}"
     except Exception as e:
         print(f"[WARN] Email send failed: {e}")
-        return False, "send_failed"
+        detail = (str(e) or "Unknown SMTP error").strip()
+        return False, "send_failed", detail[:220]
 
 
 def _get_password_reset_serializer() -> URLSafeTimedSerializer:
@@ -2005,11 +2024,12 @@ def approve_book_request(req_id: int):
 
         email_sent = False
         email_reason = "email_missing"
+        email_error = ""
         if recipient_email:
             subject, body = _build_book_request_email(req, approved=True, due_date=due_date)
-            email_sent, email_reason = _send_email(recipient_email, subject, body)
+            email_sent, email_reason, email_error = _send_email(recipient_email, subject, body)
 
-        return jsonify({'success': True, 'email_sent': email_sent, 'email_reason': email_reason})
+        return jsonify({'success': True, 'email_sent': email_sent, 'email_reason': email_reason, 'email_error': email_error})
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -2045,11 +2065,12 @@ def reject_book_request(req_id: int):
 
         email_sent = False
         email_reason = "email_missing"
+        email_error = ""
         if recipient_email:
             subject, body = _build_book_request_email(req, approved=False)
-            email_sent, email_reason = _send_email(recipient_email, subject, body)
+            email_sent, email_reason, email_error = _send_email(recipient_email, subject, body)
 
-        return jsonify({'success': True, 'email_sent': email_sent, 'email_reason': email_reason})
+        return jsonify({'success': True, 'email_sent': email_sent, 'email_reason': email_reason, 'email_error': email_error})
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500

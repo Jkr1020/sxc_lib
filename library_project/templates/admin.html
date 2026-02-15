@@ -1335,12 +1335,13 @@
                     alert("Approved. Email sent to user.");
                 } else {
                     const reason = (data.email_reason || "").toLowerCase();
+                    const detail = (data.email_error || "").trim();
                     if (reason === "email_missing") {
                         alert("Approved. Email not sent (request/user email missing).");
                     } else if (reason === "smtp_not_configured") {
-                        alert("Approved. Email not sent (SMTP is not configured).");
+                        alert(detail ? `Approved. Email not sent (${detail}).` : "Approved. Email not sent (SMTP is not configured).");
                     } else if (reason === "send_failed") {
-                        alert("Approved, but email delivery failed. Check server logs.");
+                        alert(detail ? `Approved, but email delivery failed: ${detail}` : "Approved, but email delivery failed. Check server logs.");
                     } else {
                         alert("Approved. Email not sent.");
                     }
@@ -1375,12 +1376,13 @@
                     alert("Rejected. Email sent to user.");
                 } else {
                     const reason = (data.email_reason || "").toLowerCase();
+                    const detail = (data.email_error || "").trim();
                     if (reason === "email_missing") {
                         alert("Rejected. Email not sent (request/user email missing).");
                     } else if (reason === "smtp_not_configured") {
-                        alert("Rejected. Email not sent (SMTP is not configured).");
+                        alert(detail ? `Rejected. Email not sent (${detail}).` : "Rejected. Email not sent (SMTP is not configured).");
                     } else if (reason === "send_failed") {
-                        alert("Rejected, but email delivery failed. Check server logs.");
+                        alert(detail ? `Rejected, but email delivery failed: ${detail}` : "Rejected, but email delivery failed. Check server logs.");
                     } else {
                         alert("Rejected. Email not sent.");
                     }
